@@ -45,7 +45,7 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [ ] Veľkosť písma + výber fontu
 - [ ] Build pre Windows
 - [ ] Build pre Android
-- [ ] Spec: `docs/specs/phase-1-mvp.md`
+- [x] Spec: `docs/specs/phase-1-mvp.md`
 
 ### Fáza 2 — Navigácia v knihe
 - [ ] Obsah (TOC) + skok na kapitolu
@@ -91,17 +91,22 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
 ## Aktuálny stav
 
-**Fáza:** Brainstorming Fázy 1 (MVP)
-**Posledná aktualizácia:** 2026-06-19
+**Fáza:** Fáza 1 (MVP) — spec napísaný, čaká na review používateľa
+**Posledná aktualizácia:** 2026-06-20
 
 ### Hotové
 - [x] Rozhodnutie: Flutter (PC + Android, jeden codebase)
 - [x] Rozhodnutie: cloud sync cez používateľov vlastný účet, plugin architektúra
 - [x] Rozdelenie projektu na 6 fáz
 - [x] Inicializácia repozitára + tento plán
+- [x] Brainstorming Fázy 1 (MVP) — všetky kľúčové UX rozhodnutia urobené
+- [x] Spec Fázy 1 napísaný: `docs/specs/phase-1-mvp.md`
 
 ### Najbližší krok
-- Detailný brainstorm Fázy 1 (MVP) → spec → implementačný plán
+1. Používateľ prečíta `docs/specs/phase-1-mvp.md` a dá pripomienky
+2. Rozhodneme 3 otvorené otázky (OQ1–OQ3 v spec-u)
+3. Vytvoríme implementačný plán cez `superpowers:writing-plans` skill
+4. Začneme M1 — renderer spike
 
 ---
 
