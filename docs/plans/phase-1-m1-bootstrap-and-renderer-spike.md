@@ -65,7 +65,7 @@ Run:
 ```
 ls
 ```
-Expected: `.git/`, `.gitignore`, `PLAN.md`, `docs/` — nič iné. Ak je tam niečo navyše, zastav a opýtaj sa.
+Expected: `.git/`, `.gitignore`, `README.md`, `docs/` — nič iné. Ak je tam niečo navyše, zastav a opýtaj sa.
 
 - [ ] **Step 1.2: Spusti `flutter create` v existujúcom priečinku**
 
@@ -74,7 +74,7 @@ Run:
 flutter create --org app.epubreader --project-name epubreader --platforms=windows,android --description "Adless multi-platform EPUB reader" .
 ```
 
-Expected: `flutter create` doplní platformové priečinky a `pubspec.yaml`. Existujúce súbory (`PLAN.md`, `docs/`, `.gitignore`) zostanú nedotknuté. Skontroluj že náš `.gitignore` má prednosť — ak `flutter create` pridal svoj vlastný riadok navyše, je to OK, len ho nepretrieme.
+Expected: `flutter create` doplní platformové priečinky a `pubspec.yaml`. Existujúce súbory (`README.md`, `docs/`, `.gitignore`) zostanú nedotknuté. Skontroluj že náš `.gitignore` má prednosť — ak `flutter create` pridal svoj vlastný riadok navyše, je to OK, len ho nepretrieme.
 
 - [ ] **Step 1.3: Over že sa appka skompiluje a spustí na Windows**
 
@@ -909,7 +909,7 @@ git commit -m "feat(m1): spike C — epubx parser + flutter_html render"
 **Files:**
 - Create: `docs/adr/0001-epub-renderer-choice.md`
 - Modify: `docs/specs/phase-1-mvp.md` (zafixovať voľbu v §3)
-- Modify: `PLAN.md` (zaškrtnúť M1 hotové)
+- Modify: `README.md` (zaškrtnúť M1 hotové)
 
 - [ ] **Step 9.1: Vytvor priečinok**
 
@@ -994,9 +994,9 @@ Otvor `docs/specs/phase-1-mvp.md`, nájdi v §3 časť „EPUB rendering: rozhod
 - **EPUB rendering:** `<víťaz>` — výber zafixovaný v [ADR 0001](../adr/0001-epub-renderer-choice.md).
 ```
 
-- [ ] **Step 9.5: Aktualizuj PLAN.md**
+- [ ] **Step 9.5: Aktualizuj README.md**
 
-V `PLAN.md` v sekcii „Fáza 1 — MVP" zaškrtni:
+V `README.md` v sekcii „Fáza 1 — MVP" zaškrtni:
 
 ```markdown
 - [x] Výber a otestovanie EPUB renderovacej knižnice
@@ -1021,7 +1021,7 @@ V sekcii „Aktuálny stav" aktualizuj:
 
 Run:
 ```
-git add docs/adr/ docs/specs/phase-1-mvp.md PLAN.md
+git add docs/adr/ docs/specs/phase-1-mvp.md README.md
 git commit -m "docs(m1): adr 0001 — chose <vitaz> as epub renderer"
 ```
 
@@ -1169,7 +1169,7 @@ Expected: appka sa spustí v emulatore, klik na víťaza otvorí spike, otvoreni
 
 - [ ] **Step 11.5: Commit (žiadne kódové zmeny, len markdown poznámka)**
 
-Aktualizuj `PLAN.md` — v sekcii M1 zaškrtni „Build pre Android":
+Aktualizuj `README.md` — v sekcii M1 zaškrtni „Build pre Android":
 
 ```markdown
 - [x] Build pre Android
@@ -1177,7 +1177,7 @@ Aktualizuj `PLAN.md` — v sekcii M1 zaškrtni „Build pre Android":
 
 Run:
 ```
-git add PLAN.md
+git add README.md
 git commit -m "docs(m1): android build verified on emulator"
 ```
 
@@ -1191,7 +1191,7 @@ git commit -m "docs(m1): android build verified on emulator"
 - [ ] (voliteľné — Task 11) `flutter run -d emulator-XXXX` to isté na Androide.
 - [ ] ADR 0001 existuje, je commitnutý, je v ňom konkrétne meno víťaza a 2-4 vetné odôvodnenie.
 - [ ] Pubspec obsahuje len víťaza (a tranzitívne závislosti), porazení sú odstránení.
-- [ ] PLAN.md odráža stav „M1 hotový, ideme na M2".
+- [ ] README.md odráža stav „M1 hotový, ideme na M2".
 
 ---
 
