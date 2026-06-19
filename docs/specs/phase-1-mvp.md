@@ -334,10 +334,10 @@ Položky v `settings`:
 ### R5 — Veľké knihy (500+ kapitol, 10+ MB)
 - Načítanie do pamäte môže byť pomalé. **Mitigácia:** lazy parsing — pri otvorení čítame len OPF + aktuálnu kapitolu, ďalšie kapitoly podľa potreby.
 
-### Otvorené otázky pre review
-- **OQ1:** Pri pridaní priečinku — pýtame sa dialógom „managed alebo watched", alebo má každý priečinok atribút? *Návrh:* pri prvom pridaní pýtame, zapamätáme preferenciu do Settings, ďalšie pridávania sa už nepýtajú (mení sa v Settings).
-- **OQ2:** Obnova okna na PC — máme zachovať aj poslednú otvorenú obrazovku? *Návrh:* nie, vždy ideme cez `startupScreen` Setting.
-- **OQ3:** Mobile orientation lock v Reader-i? *Návrh:* default „follow system", v Reader-i bude bottom-sheet voľba „Zamknúť otáčanie". Považujem za MVP-okay; ak to budeš chcieť presunúť do Fázy 6, povedz.
+### Rozhodnuté otázky (review s používateľom 2026-06-20)
+- **OQ1 ✅** — Pri **prvom** pridaní priečinka sa appka pýta dialógom „Spravovaná knižnica vs Sledovaný priečinok". Voľba sa zapamätá do `settings.storageMode` a ďalšie pridávania sa už nepýtajú. Zmeniť sa dá v `/settings/library`.
+- **OQ2 ✅** — Posledná otvorená obrazovka sa **NEUKLADÁ**. Pri spustení sa vždy ide podľa `settings.startupScreen` (Domov / Knižnica / Posledná kniha).
+- **OQ3 ✅** — Orientation lock v Reader-i je súčasťou MVP. Default „follow system", v Reader bottom-sheet je voľba „Zamknúť na výšku / na šírku / sledovať systém". Setting sa ukladá globálne, nie per-kniha.
 
 ---
 
@@ -385,7 +385,7 @@ Detailnejší implementačný plán vznikne v ďalšom kroku cez `writing-plans`
 
 ## 13. Schvaľovanie
 
-- [ ] Používateľ prečítal spec
-- [ ] Otvorené otázky (OQ1–OQ3) rozhodnuté
-- [ ] Pripomienky zapracované
-- [ ] Spec schválený → ide sa robiť implementačný plán
+- [x] Používateľ prečítal spec
+- [x] Otvorené otázky (OQ1–OQ3) rozhodnuté
+- [x] Pripomienky zapracované (žiadne neboli — používateľ odsúhlasil všetky odporúčania 2026-06-20)
+- [x] Spec schválený → ide sa robiť implementačný plán

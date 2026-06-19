@@ -91,7 +91,7 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
 ## Aktuálny stav
 
-**Fáza:** Fáza 1 (MVP) — spec napísaný, čaká na review používateľa
+**Fáza:** Fáza 1 (MVP) — spec schválený, ideme robiť implementačný plán
 **Posledná aktualizácia:** 2026-06-20
 
 ### Hotové
@@ -101,12 +101,11 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [x] Inicializácia repozitára + tento plán
 - [x] Brainstorming Fázy 1 (MVP) — všetky kľúčové UX rozhodnutia urobené
 - [x] Spec Fázy 1 napísaný: `docs/specs/phase-1-mvp.md`
+- [x] Otvorené otázky OQ1–OQ3 rozhodnuté, spec schválený
 
 ### Najbližší krok
-1. Používateľ prečíta `docs/specs/phase-1-mvp.md` a dá pripomienky
-2. Rozhodneme 3 otvorené otázky (OQ1–OQ3 v spec-u)
-3. Vytvoríme implementačný plán cez `superpowers:writing-plans` skill
-4. Začneme M1 — renderer spike
+1. Vytvoriť implementačný plán pre Fázu 1 cez `superpowers:writing-plans` skill
+2. Začať M1 — renderer spike (porovnanie troch kandidátov)
 
 ---
 
