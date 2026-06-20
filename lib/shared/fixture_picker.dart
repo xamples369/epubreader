@@ -3,7 +3,7 @@ import 'package:file_picker/file_picker.dart';
 /// Návratový typ — buď cesta k vybranému súboru, alebo null ak používateľ
 /// dialog zrušil.
 Future<String?> pickEpubFile() async {
-  final result = await FilePicker.platform.pickFiles(
+  final result = await FilePicker.pickFiles(
     type: FileType.custom,
     allowedExtensions: ['epub'],
     allowMultiple: false,
