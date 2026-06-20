@@ -91,7 +91,7 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
 ## Aktuálny stav
 
-**Fáza:** Fáza 1 (MVP), Milník M1 — plán hotový, pripravený na execution
+**Fáza:** Fáza 1 (MVP), Milník M1 — hotový (okrem voliteľnej Android verifikácie)
 **Posledná aktualizácia:** 2026-06-20
 
 ### Hotové
@@ -103,14 +103,13 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [x] Spec Fázy 1 napísaný: `docs/specs/phase-1-mvp.md`
 - [x] Otvorené otázky OQ1–OQ3 rozhodnuté, spec schválený
 - [x] Plán pre M1 napísaný: `docs/plans/phase-1-m1-bootstrap-and-renderer-spike.md`
+- [x] M1.T1–T10 spravené — Flutter projekt beží na Windows, EPUB renderer vybraný (epub_view), porazení kandidáti zmazaní
+- [x] ADR 0001: `epub_view ^3.2.0` (`flutter_epub_viewer` padol pri renderingu, `epubx+flutter_html` je len parser)
 
 ### Najbližší krok
-1. Execution M1 (11 taskov, ~1 deň práce):
-   - Bootstrap Flutter projektu
-   - 3 spike-y na EPUB renderery
-   - ADR 0001 s rozhodnutím
-   - Cleanup porazených kandidátov
-2. Po M1 napíšeme plán pre M2 (Library + DB backbone)
+1. Voliteľne M1.T11 — Android cmdline-tools + emulator (nech vieme že build funguje aj na mobile)
+2. Plán pre M2 (Library + DB backbone) cez `superpowers:writing-plans`
+3. Začiatok M2 implementácie
 
 ---
 
