@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'spike/epub_view_spike.dart';
 import 'spike/flutter_epub_viewer_spike.dart';
 import 'spike/spike_menu.dart';
 
@@ -21,6 +22,7 @@ class EpubReaderApp extends StatelessWidget {
       home: const SpikeMenuScreen(),
       routes: {
         '/spike/flutter_epub_viewer': (_) => const FlutterEpubViewerSpikeScreen(),
+        '/spike/epub_view': (_) => const EpubViewSpikeScreen(),
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (_) => Scaffold(
