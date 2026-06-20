@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:epubreader/main.dart';
+import 'package:epubreader/app.dart';
 
 void main() {
   testWidgets('Dev menu shows the chosen renderer entry point',
