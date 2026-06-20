@@ -46,6 +46,9 @@ dependencies:
   drift: 2.30.0
   drift_flutter: ^0.2.8
   sqlite3_flutter_libs: ^0.5.42
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +76,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

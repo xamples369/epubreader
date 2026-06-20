@@ -1,0 +1,13 @@
+{
+  "@@locale": "en",
+  "appTitle": "EPUB Reader",
+  "libraryEmpty": "Your library is empty. Add your first book.",
+  "addBook": "Add book",
+  "libraryTitle": "Library",
+  "viewGrid": "Grid",
+  "viewList": "List",
+  "readerStubTitle": "Reader (coming soon)",
+  "readerStubBody": "This is a placeholder. Real reading lands in M3.",
+  "errorOpenEpub": "Could not open EPUB file.",
+  "unknownAuthor": "Unknown author"
+}

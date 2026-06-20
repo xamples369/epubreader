@@ -1,0 +1,25 @@
+{
+  "@@locale": "sk",
+  "appTitle": "EPUB Reader",
+  "@appTitle": {
+    "description": "Application title in the system task switcher"
+  },
+  "libraryEmpty": "Knižnica je prázdna. Pridaj prvú knihu.",
+  "@libraryEmpty": {},
+  "addBook": "Pridať knihu",
+  "@addBook": {},
+  "libraryTitle": "Knižnica",
+  "@libraryTitle": {},
+  "viewGrid": "Mriežka",
+  "@viewGrid": {},
+  "viewList": "Zoznam",
+  "@viewList": {},
+  "readerStubTitle": "Reader (v príprave)",
+  "@readerStubTitle": {},
+  "readerStubBody": "Toto je dočasná obrazovka. Reálne čítanie príde v M3.",
+  "@readerStubBody": {},
+  "errorOpenEpub": "Nepodarilo sa otvoriť EPUB súbor.",
+  "@errorOpenEpub": {},
+  "unknownAuthor": "Neznámy autor",
+  "@unknownAuthor": {}
+}
