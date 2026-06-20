@@ -107,9 +107,9 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [x] ADR 0001: `epub_view ^3.2.0` (`flutter_epub_viewer` padol pri renderingu, `epubx+flutter_html` je len parser)
 
 ### Najbližší krok
-1. Voliteľne M1.T11 — Android cmdline-tools + emulator (nech vieme že build funguje aj na mobile)
-2. Plán pre M2 (Library + DB backbone) cez `superpowers:writing-plans`
-3. Začiatok M2 implementácie
+1. Execution M2 (16 taskov): Drift DB + EPUB parser + Riverpod + Library UI + Reader stub + i18n
+2. Plán: `docs/plans/phase-1-m2-library-backbone.md`
+3. Po M2 → plán pre M3 (Reader v1, scroll mode)
 
 ---
 
