@@ -51,10 +51,7 @@ iOS, macOS, Linux nie sú cieľom MVP, ale ničím v dizajne ich do budúcna nev
 - **Drift** (na SQLite) — lokálna databáza
 - **`go_router`** — navigácia
 - **`flutter_localizations` + ARB** — i18n (MVP shipne so slovenčinou)
-- **EPUB rendering:** rozhoduje sa v Mileniku M1 (viď §9). Kandidáti:
-  - `flutter_epub_viewer` (wrapper okolo `epub.js` cez WebView) — najzrelší rendering,
-  - `epub_view` — natívny Flutter widget,
-  - `epubx` + vlastný HTML renderer (`flutter_html` alebo custom) — najviac kontroly.
+- **EPUB rendering:** **`epub_view ^3.2.0`** — výber zafixovaný v [ADR 0001](../adr/0001-epub-renderer-choice.md). `flutter_epub_viewer` padol pri renderingu vo WebView2, `epubx + flutter_html` zostáva ako technicky funkčná záloha.
 - **`file_picker`**, **`desktop_drop`** (Windows drag&drop), **`path_provider`**.
 
 > Verzie balíčkov sa zafixujú v `pubspec.yaml` v M1.

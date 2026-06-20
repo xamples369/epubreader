@@ -22,7 +22,7 @@ Vlastný spoľahlivý EPUB reader, ktorý:
 - **Flutter + Dart** — jeden codebase pre Windows + Android (neskôr prípadne iOS/macOS/Linux)
 - **Riverpod** — state management
 - **Drift (SQLite)** — lokálna databáza (knižnica, anotácie, pozícia čítania)
-- **EPUB knižnica** — vybrať počas Fázy 1 z kandidátov: `epub_view`, `epubx`, `flutter_epub_viewer`
+- **EPUB knižnica** — `epub_view ^3.2.0` (zafixované v [ADR 0001](docs/adr/0001-epub-renderer-choice.md))
 - **Cloud abstrakcia** — vlastné rozhranie + pluginy pre jednotlivých providerov
 
 > Tieto voľby ešte nie sú zabetónované, finalizujeme ich pred Fázou 1.
@@ -37,7 +37,7 @@ Najprv brainstorm → spec → plán → kód → review → ďalšia fáza.
 ### Fáza 1 — MVP „Čítačka" 🔜
 Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
-- [ ] Výber a otestovanie EPUB renderovacej knižnice
+- [x] Výber a otestovanie EPUB renderovacej knižnice (ADR 0001 → `epub_view`)
 - [ ] Otvorenie EPUB súboru z disku
 - [ ] Listovanie/scrollovanie textu
 - [ ] Jednoduchá knižnica (zoznam kníh + obálky)
