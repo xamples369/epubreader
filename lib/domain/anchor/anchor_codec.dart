@@ -80,16 +80,59 @@ class AnchorCodec {
     );
   }
 
-  /// Resolve — minimálna verzia. Plnú implementáciu pridá T6 (exact +
-  /// disambiguation) a T7 (sliding fuzzy).
+  /// Resolve `HighlightAnchor` na `AnchorRange` v kanonickom texte kapitoly.
+  /// Algoritmus per spec §5:
+  ///   1. Normalize chapter (cez CanonicalChapterText.extract — už normalised)
+  ///   2. Exact match v okne ±200 znakov okolo charOffset hint-u
+  ///   3. Single hit v okne → vráť
+  ///   4. Viac hitov / žiadny v okne → skús prefix+quote+suffix presný kontext
+  ///   5. Global single exact match
+  ///   6. (Task 7) Sliding fuzzy fallback
+  ///   7. Inak null
   static AnchorRange? findHighlight({
     required HighlightAnchor anchor,
     required EpubBook book,
   }) {
     final canonical = CanonicalChapterText.extract(book, anchor.chapterId);
     if (canonical.isEmpty || anchor.quote.isEmpty) return null;
-    final idx = canonical.indexOf(anchor.quote);
-    if (idx < 0) return null;
-    return AnchorRange(idx, idx + anchor.quote.length);
+
+    // (2) Exact match v okne ±200 okolo charOffset
+    final hint = anchor.charOffset;
+    if (hint != null) {
+      final windowStart = (hint - 200).clamp(0, canonical.length);
+      final windowEnd =
+          (hint + 200 + anchor.quote.length).clamp(0, canonical.length);
+      if (windowEnd > windowStart) {
+        final window = canonical.substring(windowStart, windowEnd);
+        final localIdx = window.indexOf(anchor.quote);
+        // (3) Single hit v okne?
+        if (localIdx >= 0 &&
+            window.indexOf(anchor.quote, localIdx + 1) < 0) {
+          return AnchorRange(
+            windowStart + localIdx,
+            windowStart + localIdx + anchor.quote.length,
+          );
+        }
+      }
+    }
+
+    // (4) Disambiguácia cez prefix+quote+suffix presný kontext
+    final contextNeedle = anchor.prefix + anchor.quote + anchor.suffix;
+    if (contextNeedle.length > anchor.quote.length) {
+      final contextIdx = canonical.indexOf(contextNeedle);
+      if (contextIdx >= 0) {
+        final quoteStart = contextIdx + anchor.prefix.length;
+        return AnchorRange(quoteStart, quoteStart + anchor.quote.length);
+      }
+    }
+
+    // (5) Global single exact match (žiadne okno, žiadny kontext)
+    final globalIdx = canonical.indexOf(anchor.quote);
+    if (globalIdx >= 0 && canonical.indexOf(anchor.quote, globalIdx + 1) < 0) {
+      return AnchorRange(globalIdx, globalIdx + anchor.quote.length);
+    }
+
+    // (6) Sliding fuzzy fallback — implementuje sa v T7
+    return null;
   }
 }
