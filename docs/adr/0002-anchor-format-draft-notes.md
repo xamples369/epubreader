@@ -49,9 +49,67 @@ Súbor: `lib/spike/anchor_probe/inline_canonical_extractor.dart` a
 
 ---
 
-## S1 — EpubController API investigation
+## S1 — EpubController API investigation (2026-06-21)
 
-_(vznikne počas T2)_
+**Metóda:** statická analýza zdroja `epub_view-3.2.0/lib/src/`. Dynamický test
+preskočený — statika dala kompletný obraz, ďalší manuálny test by bol low value.
+
+### Verejné API `EpubController`
+
+| Info | Dostupné? | API | Kvalita |
+|------|-----------|-----|---------|
+| Aktuálna kapitola (EpubChapter object) | ✅ | `controller.currentValue?.chapter` | dobré — má Title, ContentFileName, HtmlContent |
+| Aktuálna kapitola (manifest href / ContentFileName) | ✅ | `controller.currentValue?.chapter?.ContentFileName` | dobré |
+| Aktuálna kapitola (číselný index) | ✅ | `controller.currentValue?.chapterNumber` | dobré |
+| Paragraph index v kapitole | ✅ | `controller.currentValue?.paragraphNumber` | dobré (1-based) |
+| Scroll offset / position info | ✅ | `controller.currentValue?.position` (ItemPosition: index, itemLeadingEdge, itemTrailingEdge) | dobré ale pixel-based |
+| Progress v kapitole (%) | ✅ | `controller.currentValue?.progress` (computed getter) | render-závislý % |
+| Listener zmeny pozície | ✅ | `controller.currentValueListenable` (ValueNotifier) | dobré |
+| Listener loading state | ✅ | `controller.loadingState` | dobré |
+| TOC (table of contents) | ✅ | `controller.tableOfContents()` + `tableOfContentsListenable` | dobré |
+| **Programmatic scroll na paragraph index** | ✅ | `controller.scrollTo(index: N)` / `jumpTo(index: N)` | dobré |
+| **Programmatic scroll na char offset** | ❌ | žiadne priame API | — |
+| **`generateEpubCfi()`** | ✅ | `controller.generateEpubCfi()` → String? CFI | BONUS — vrátí CFI pre aktuálnu top pozíciu |
+| **`gotoEpubCfi(cfi)`** | ✅ | `controller.gotoEpubCfi(cfi)` | BONUS — rýchla cesta na CFI pozíciu |
+| Init s pozíciou | ✅ | `EpubController(document: ..., epubCfi: '...')` | dobré |
+| Selection / onSelectionChanged | ❌ | nie je vystavené | **fallback:** `SelectionArea` wrapper alebo úplne iný UI flow pre highlight tvorbu (do M3/Fáza 3) |
+
+### Plán A vs Plán B pre RP resolve (§4.1)
+
+**Plán A (priame char → scroll):**
+- Controller scrolluje na **paragraph index** (`scrollTo(index: N)`), nie na char offset.
+- Z char offset v canonical-text vieme odvodiť paragraph cez prechod chapters → paragraphs
+  s kumulatívnym char count (per-chapter pre-compute pri prvom otvorení knihy).
+- **Funguje — Plán A je realizovateľný** s mid-task mapping krokom.
+
+**Plán B (degenerovaný HighlightAnchor):**
+- Pri save: vezmi prvých ~64 znakov okolo aktuálnej top pozície ako quote.
+- Pri resolve: `findHighlight(...)` → char range → mapuj na paragraph → scroll.
+- Vždy funguje, mierne pomalšie (text search), ale je to fallback v každom prípade
+  ak by Plán A zlyhal pri konkrétnej knihe.
+
+**Bonus Plán C (CFI hybrid):**
+- Naviac k char-offset anchor uložiť aj **CFI cache** ako transient pole.
+- Save: `controller.generateEpubCfi()`, ulož v anchore ako neserialisable field
+  (nepatrí do JSON — CFI je epub_view-specific a nesync-uje sa medzi rendererom).
+- Load: skús `controller.gotoEpubCfi(cfi)` najprv (fast path); pri zlyhaní
+  fallback na char offset → paragraph (Plán A).
+
+### Rozhodnutie pre ADR 0002
+
+**Primárna stratégia: Plán A** — char offset v canonical-texte mapped na paragraph
+index pri resolve. Toto je rendererom prenositeľné cez sync.
+
+**Voliteľná optimalizácia (M3+): Plán C** — CFI sa môže uchovať lokálne ako cache
+pre fast resolve na tom istom zariadení. Nesynchronizuje sa do cloudu (epub_view-
+specific). Tým si nezviažeme ruky pri prípadnej zmene renderera.
+
+**Highlight tvorba** — `epub_view` nemá selection callback. Pre Fázu 3 buď
+wrap-neme `EpubView` v `SelectionArea` (ak to akceptuje), alebo postavíme
+vlastný UI flow (tap → pop-up s "select start/end" workflow). To je výzva pre
+M3+, nie pre M2.5.
+
+---
 
 ---
 
