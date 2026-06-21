@@ -45,7 +45,7 @@ dependencies:
   riverpod_annotation: 3.0.0
   drift: 2.30.0
   drift_flutter: ^0.2.8
-  sqlite3_flutter_libs: ^0.5.42
+  sqlite3_flutter_libs: 0.5.30
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
