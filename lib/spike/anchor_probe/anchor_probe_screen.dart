@@ -117,9 +117,10 @@ class _AnchorProbeScreenState extends State<AnchorProbeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'S0 GATE: otvor fixture → urob 3-5 selekcií (Ctrl+C alebo '
-                  'výber+kopírovanie) → klikni „Check selection" → paste → Check. '
-                  'Cieľ: VŠETKY selekcie majú vrátiť ✅.',
+                  'S0 GATE: otvor fixture → prečítaj 3-5 fráz priamo z čítača nižšie '
+                  '(epub_view nedovoľuje copy) → klikni „Check phrase" → '
+                  'NAPÍŠ tých 5-10 slov ručne → Check. '
+                  'Cieľ: VŠETKY frázy majú vrátiť ✅.',
                   style: TextStyle(fontSize: 12),
                 ),
                 if (_fixtureName != null) ...[
@@ -162,7 +163,7 @@ class _AnchorProbeScreenState extends State<AnchorProbeScreen> {
           ? null
           : FloatingActionButton.extended(
               icon: const Icon(Icons.check),
-              label: const Text('Check selection'),
+              label: const Text('Check phrase'),
               onPressed: () async {
                 final input = await _promptForSelection(context);
                 if (input != null && input.isNotEmpty) {
@@ -178,13 +179,14 @@ class _AnchorProbeScreenState extends State<AnchorProbeScreen> {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Vlož selekciu na overenie'),
+        title: const Text('Napíš frázu na overenie'),
         content: TextField(
           controller: controller,
           maxLines: 4,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'Skopíruj text z čítača vyššie a paste sem...',
+            hintText: 'Napíš 5-10 slov z toho čo vidíš v čítači. '
+                'Diakritika musí sedieť.',
             border: OutlineInputBorder(),
           ),
         ),
