@@ -132,7 +132,101 @@ class AnchorCodec {
       return AnchorRange(globalIdx, globalIdx + anchor.quote.length);
     }
 
-    // (6) Sliding fuzzy fallback — implementuje sa v T7
-    return null;
+    // (6) Sliding fuzzy fallback
+    final hintForFuzzy = anchor.charOffset ?? (canonical.length ~/ 2);
+    return slidingFuzzyFind(
+      needle: anchor.quote,
+      haystack: canonical,
+      windowCenter: hintForFuzzy,
+    );
+  }
+
+  /// Sliding alignment fuzzy substring search (Smith-Waterman-style local
+  /// alignment). Kĺže `needle` cez okno `haystack[center-radius : center+radius]`
+  /// a hľadá pozíciu s najnižším edit distance. Menovateľ pre similarity je
+  /// dĺžka needle (NIE okna) — preto match funguje aj keď je needle kratšia
+  /// ako okno.
+  ///
+  /// Vracia `AnchorRange` (absolute v haystack-u), alebo null ak best match
+  /// nedosiahne threshold.
+  static AnchorRange? slidingFuzzyFind({
+    required String needle,
+    required String haystack,
+    required int windowCenter,
+    int windowRadius = 500,
+    double threshold = 0.92,
+  }) {
+    if (needle.isEmpty || haystack.isEmpty) return null;
+
+    final windowStart = (windowCenter - windowRadius).clamp(0, haystack.length);
+    final windowEnd =
+        (windowCenter + windowRadius + needle.length).clamp(0, haystack.length);
+    if (windowEnd <= windowStart) return null;
+    final window = haystack.substring(windowStart, windowEnd);
+
+    int bestStart = -1;
+    int bestEnd = -1;
+    double bestSim = -1.0;
+    int bestDistanceToHint = 1 << 30;
+
+    // Povolíme posun dĺžky ±10 znakov (inserts/deletes vo vnútri quote).
+    const deltaMax = 10;
+    final lenMin = (needle.length - deltaMax).clamp(1, window.length);
+    final lenMax = (needle.length + deltaMax).clamp(1, window.length);
+
+    for (var i = 0; i + lenMin <= window.length; i++) {
+      final maxLen = (window.length - i).clamp(lenMin, lenMax);
+      for (var len = lenMin; len <= maxLen; len++) {
+        final candidate = window.substring(i, i + len);
+        final dist = _editDistance(needle, candidate);
+        final sim = 1.0 - dist / needle.length;
+        if (sim < threshold) continue;
+
+        final absStart = windowStart + i;
+        final distToHint = (absStart - windowCenter).abs();
+        if (sim > bestSim ||
+            (sim == bestSim && distToHint < bestDistanceToHint) ||
+            (sim == bestSim &&
+                distToHint == bestDistanceToHint &&
+                absStart < bestStart)) {
+          bestSim = sim;
+          bestStart = absStart;
+          bestEnd = absStart + len;
+          bestDistanceToHint = distToHint;
+        }
+      }
+    }
+
+    if (bestStart < 0) return null;
+    return AnchorRange(bestStart, bestEnd);
+  }
+
+  /// Wagner-Fischer Levenshtein. O(m*n) memory.
+  /// Pre potreby M2.5 (needle ≤ ~210 znakov, candidate ≤ ~220) postačuje.
+  static int _editDistance(String a, String b) {
+    final m = a.length;
+    final n = b.length;
+    if (m == 0) return n;
+    if (n == 0) return m;
+
+    var prev = List<int>.generate(n + 1, (j) => j);
+    var curr = List<int>.filled(n + 1, 0);
+
+    for (var i = 1; i <= m; i++) {
+      curr[0] = i;
+      for (var j = 1; j <= n; j++) {
+        final cost = a.codeUnitAt(i - 1) == b.codeUnitAt(j - 1) ? 0 : 1;
+        var min = prev[j] + 1;
+        final ins = curr[j - 1] + 1;
+        if (ins < min) min = ins;
+        final sub = prev[j - 1] + cost;
+        if (sub < min) min = sub;
+        curr[j] = min;
+      }
+      final tmp = prev;
+      prev = curr;
+      curr = tmp;
+    }
+    return prev[n];
   }
 }
