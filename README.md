@@ -91,7 +91,7 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
 ## Aktuálny stav
 
-**Fáza:** Fáza 1 (MVP), Milník M2.5 hotový — ideme M3
+**Fáza:** Fáza 1 (MVP), Milník M2.6 hotový — ideme M3
 **Posledná aktualizácia:** 2026-06-21
 
 ### Hotové
@@ -103,15 +103,12 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [x] Spec Fázy 1: `docs/specs/phase-1-mvp.md` (schválený)
 - [x] M1 — Flutter bootstrap + EPUB renderer spike + ADR 0001 (epub_view)
 - [x] M2 — Library backbone: Drift DB, EPUB parser, Riverpod, LibraryScreen, Reader stub, i18n
-- [x] **M2.5 — Render-agnostic anchor format** (ADR 0002, `lib/domain/anchor/`)
-  - CanonicalChapterText extractor (single source of truth)
-  - ReadingPositionAnchor + HighlightAnchor + AnchorCodec
-  - String-first API + sliding fuzzy resolve
-  - 35 testov nad 4 EPUB fixtures, S0 canonical-text gate passed
+- [x] **M2.5** — Render-agnostic anchor format (ADR 0002, `lib/domain/anchor/`, 35 testov)
+- [x] **M2.6** — Book identity (ADR 0003, `lib/domain/book_identity/`, SHA-256 over normalised content)
 
 ### Najbližší krok
-1. **(odporúčané) M2.6 — Book identity** (ADR 0003, content-hash schéma; pred M3 zo sync hľadiska)
-2. **M3 — Reader v1 scroll mode** s `ReadingPositionAnchor` z M2.5
+1. **M3 — Reader v1 scroll mode** s `ReadingPositionAnchor` z M2.5 a `BookIdentity` z M2.6
+2. (paralelne) prípadné drobné UX polishingy na LibraryScreen
 
 ---
 
