@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'features/library/library_screen.dart';
+import 'features/reader/reader_stub_screen.dart';
 import 'l10n/app_localizations.dart';
-import 'spike/epub_view_spike.dart';
-import 'spike/spike_menu.dart';
 
 class EpubReaderApp extends StatelessWidget {
   const EpubReaderApp({super.key});
@@ -10,20 +10,26 @@ class EpubReaderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EPUB Reader',
+      onGenerateTitle: (ctx) => AppLocalizations.of(ctx)!.appTitle,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const SpikeMenuScreen(),
-      routes: {
-        '/spike/epub_view': (_) => const EpubViewSpikeScreen(),
+      home: const LibraryScreen(),
+      onGenerateRoute: (settings) {
+        if (settings.name == '/reader') {
+          final bookId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (_) => ReaderStubScreen(bookId: bookId),
+          );
+        }
+        return null;
       },
       onUnknownRoute: (settings) => MaterialPageRoute(
         builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('Not implemented')),
+          appBar: AppBar(title: const Text('Not found')),
           body: Center(child: Text('Route: ${settings.name}')),
         ),
       ),
