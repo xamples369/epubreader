@@ -1,9 +1,14 @@
-# ADR 0003 — Book Identity
+# ADR 0003 — Book Identity (SUPERSEDED)
 
-**Status:** Accepted
+**Status:** Superseded — viď [ADR 0004](0004-book-identity-revised.md)
 **Dátum:** 2026-06-21
+**Superseded by:** ADR 0004 (2026-06-21) — po code review odhalené 4 vady:
+P1 (coupling identity-normalize na meniteľný anchor extractor), P2 (`book.Chapters`
+iterácia vynechávala podkapitoly — neúplný hash, ticho), P3 (metadata v hash-i sú
+zbytočne krehké), drobnosť (fallback `#$i` nekonzistentný s anchor `#<spineIndex>`).
+Pôvodný ADR ostáva v histórii pre audit trail; živý dizajn je v ADR 0004.
+
 **Kontext:** M2.6, Fáza 1 (MVP)
-**Supersedes:** —
 **Related:** ADR 0002 (anchor format), `docs/specs/m2.6-book-identity.md`,
 `docs/strategy/2026-06-21-renderer-anchor-sync-analysis.md` §5
 
