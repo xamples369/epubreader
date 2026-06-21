@@ -132,12 +132,16 @@ sa highlighty z jedného zariadenia nemajú k čomu priviazať na druhom.
 
 ## 7. Odporúčané ďalšie kroky (podľa priority)
 
-1. **[BLOKER] Over kotvenie v `epub_view`.** Zisti, aký lokátor reálne dostaneš
-   (CFI-podobný? scroll/paragraph index?). Toto rozhoduje o všetkom ostatnom.
-2. **Rozhodni formát render-agnostickej kotvy** (vlastný `TextQuoteSelector`-style, alebo CFI cez WebView).
-   Zdokumentuj ako ADR 0002.
+1. **[done — ADR 0002]** Over kotvenie v `epub_view`.
+   *Výsledok:* paragraph-index scroll + bonus CFI cez `generateEpubCfi()` /
+   `gotoEpubCfi()`. Char→paragraph mapping pre Plán A v M3.
+2. **[done — ADR 0002]** Render-agnostická kotva = vlastný TextQuoteSelector-style
+   nad single source of truth (`CanonicalChapterText` cez epubx). Sliding fuzzy
+   resolve, typographic punctuation reconciliation.
 3. **Navrhni Drift schému anotácií ako event log** s tou kotvou — ešte pred implementáciou Fázy 3.
+   *Polia explicitne uvedené v ADR 0002 §8.*
 4. **Definuj book-identity** (hash obsahu / normalizovaný id) — ešte pred Fázou 4/5.
+   *ADR 0003 — odporúčaná M2.6.*
 5. Pokračuj v MVP (Fáza 1–2), ale s vedomím, že kroky 2–4 sú už zafixované v dátovom modeli.
 6. Neskôr: export anotácií + prepojenie na Obsidian/Notion/Anki ako hlavný diferenciátor.
 

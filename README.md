@@ -91,8 +91,8 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 
 ## Aktuálny stav
 
-**Fáza:** Fáza 1 (MVP), Milník M1 — hotový (okrem voliteľnej Android verifikácie)
-**Posledná aktualizácia:** 2026-06-20
+**Fáza:** Fáza 1 (MVP), Milník M2.5 hotový — ideme M3
+**Posledná aktualizácia:** 2026-06-21
 
 ### Hotové
 - [x] Rozhodnutie: Flutter (PC + Android, jeden codebase)
@@ -100,16 +100,18 @@ Cieľ: minimálna použiteľná appka, ktorou sa dá reálne čítať kniha.
 - [x] Rozdelenie projektu na 6 fáz
 - [x] Inicializácia repozitára + tento plán
 - [x] Brainstorming Fázy 1 (MVP) — všetky kľúčové UX rozhodnutia urobené
-- [x] Spec Fázy 1 napísaný: `docs/specs/phase-1-mvp.md`
-- [x] Otvorené otázky OQ1–OQ3 rozhodnuté, spec schválený
-- [x] Plán pre M1 napísaný: `docs/plans/phase-1-m1-bootstrap-and-renderer-spike.md`
-- [x] M1.T1–T10 spravené — Flutter projekt beží na Windows, EPUB renderer vybraný (epub_view), porazení kandidáti zmazaní
-- [x] ADR 0001: `epub_view ^3.2.0` (`flutter_epub_viewer` padol pri renderingu, `epubx+flutter_html` je len parser)
+- [x] Spec Fázy 1: `docs/specs/phase-1-mvp.md` (schválený)
+- [x] M1 — Flutter bootstrap + EPUB renderer spike + ADR 0001 (epub_view)
+- [x] M2 — Library backbone: Drift DB, EPUB parser, Riverpod, LibraryScreen, Reader stub, i18n
+- [x] **M2.5 — Render-agnostic anchor format** (ADR 0002, `lib/domain/anchor/`)
+  - CanonicalChapterText extractor (single source of truth)
+  - ReadingPositionAnchor + HighlightAnchor + AnchorCodec
+  - String-first API + sliding fuzzy resolve
+  - 35 testov nad 4 EPUB fixtures, S0 canonical-text gate passed
 
 ### Najbližší krok
-1. Execution M2 (16 taskov): Drift DB + EPUB parser + Riverpod + Library UI + Reader stub + i18n
-2. Plán: `docs/plans/phase-1-m2-library-backbone.md`
-3. Po M2 → plán pre M3 (Reader v1, scroll mode)
+1. **(odporúčané) M2.6 — Book identity** (ADR 0003, content-hash schéma; pred M3 zo sync hľadiska)
+2. **M3 — Reader v1 scroll mode** s `ReadingPositionAnchor` z M2.5
 
 ---
 
