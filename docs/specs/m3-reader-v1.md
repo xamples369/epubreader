@@ -47,7 +47,11 @@ slider jasu, fonty, settings panel) má čas v M3.5.
 
 Pri vlastnom testovaní explicitne sledovať:
 
-- ✅ Resume na správnej pozícii
+- ✅ Resume na správnej pozícii (scripted 3-5 pozícií)
+- ✅ **Resume correctness v organickom dennom čítaní** — sedel celý týždeň reálneho
+  čítania, aj po dlhých session-och, aj mid-chapter, aj cez cold restart?
+  (Scripted run odhalí hrubé chyby; organické čítanie odhalí drift, race conditions,
+  edge cases ktoré sa neopakujú deterministicky.)
 - ✅ Vernosť renderu (text čitateľne, diakritika, obrázky)
 - ✅ Stabilita (žiadne crashes, freezes)
 
@@ -107,7 +111,10 @@ ReaderScreen (UI, ConsumerWidget)
    │     └── darkModeProvider              — bool, persists cez SettingsKvDao
    │
    ├──> PositionPersister                  — debounced save → DAO
-   │     └── debounce 1.5 s + immediate flush on dispose / route pop
+   │     └── debounce 1.5 s
+   │     └── immediate flush on: dispose, route pop, AppLifecycleState.paused
+   │       (Mobile OS môže zabiť appku bez dispose — paused je posledný spoľahlivý
+   │        hook pred kill-om. Cez WidgetsBindingObserver.)
    │
    ├──> PositionResolver                   — Plán A or B (M3 GATE)
    │     ├── computeAnchor(scrollState) → ReadingPositionAnchor
@@ -156,69 +163,116 @@ ReaderScreen (UI, ConsumerWidget)
 
 ---
 
-## 5. Plán A vs Plán B — GATE v Task 1
+## 5. Plán A vs Plán B — GATE v Task 1 (REVISED)
 
-### Plán A — priame char→paragraph→scroll mapping
+### Jadrová tenzia, ktorá definuje M3
 
-**Pri otvorení knihy:**
-1. Pre každú kapitolu v spine vypočítaj `paragraphCharStarts: List<int>`
-   (kumulatívne char positions kde každý paragraph začína v `CanonicalChapterText`).
-2. Cache toto v memóri (alebo prepočítaj on-the-fly pri resolve).
+Tu je vec ktorú treba explicitne pomenovať lebo je centrálna, nie okrajová:
 
-**Resolve `(chapterId, charOffset)` → scroll position:**
-1. Nájdi `paragraphCharStarts` pre danú kapitolu.
-2. `paragraphIndexInChapter = upper_bound(starts, charOffset) - 1` (najbližší preceding paragraph start).
-3. `absoluteParagraphIndex = chapterStartIndex + paragraphIndexInChapter`
-   (`chapterStartIndex` z `EpubController.tableOfContents` — toto epub_view vystavuje).
-4. `controller.scrollTo(index: absoluteParagraphIndex)`.
+- **`epub_view` natívny paragraph index** by dal trivílny self-konzistentný resume,
+  ale je **render/library-dependent** — rozbil by celý render-agnostický anchor
+  formát (cross-device portability).
+- **Char-offset v canonical texte** je **prenosný** medzi zariadeniami, ale
+  potrebuje mapping na epub_view paragraph index aby sa scrollni-lo.
 
-**Pre/proti:**
-- ✅ Priama cesta, deterministická
-- ✅ Nepotrebuje text search
-- ⚠️ Závisí od epub_view paragraph-decomposition algoritmu (musí byť identický s naším)
-- ⚠️ Mapping na `EpubController.scrollTo` paragraphs môže mať off-by-one alebo iné drobnosti
+To napätie je jadro M3, nie edge case R2. **Dôsledok ktorý spec explicitne priznáva:**
+dosiahnuteľná presnosť resume v M3 je **paragraph-level** — `epub_view`
+pri scroll-e reportuje granularitu odseku, nie znak. `±1 paragraph` tolerancia
+nie je ústupok, je to fyzický limit rendereru. **`charOffset` nevyzerá presnejšie
+než reálne je** — jeho hodnota je v prenosnosti na iné zariadenie, nie v presnosti
+na tomto. Toto je dôležitý mental model pre M3.5 a Fázu 5.
 
-**Compute anchor (opačný smer):**
-1. Z `currentValue.chapterNumber + paragraphNumber` získaj canonical text kapitoly
-2. Sčítaj char dĺžky paragraphov [0..paragraphNumber)
-3. To je `charOffset`
+### Prečo Plán A „ako napísaný" pravdepodobne nie je implementovateľný
 
-### Plán B — degenerated highlight cez findHighlight
+`CanonicalChapterText` (M2.5) bol postavený pre **char-level text matching**,
+nie pre paragraph segmentation. Konkrétne:
+
+- `CanonicalChapterText._normalize` kolabuje **všetok whitespace** na jednu medzeru
+  (zhodne s M2.6 `_identityNormalize`). To znamená že v canonical texte **nie sú
+  hranice odsekov** — `paragraphCharStarts` z neho **nemá z čoho vzniknúť**.
+- Aj keby sme mali paragraph hranice z iného zdroja (parsovaním raw HTML),
+  `epub_view` rozsekáva kapitolu na **blok-úrovňové elementy cez `flutter_html`**
+  (`<p>`, `<div>`, `<h1-h6>`, `<blockquote>`, `<li>`, `<img>` ako samostatné
+  „odseky"). Náš vlastný paragraph count by sa s ním nemusel kryť off-by-N.
+
+Takže Plán A v pôvodnom znení (paragraphCharStarts z CanonicalChapterText)
+**nefunguje**. Ak by sme chceli A, museli by sme parsovať raw HTML zhodne s
+flutter_html (zložité, krehké).
+
+### GATE redesign — measurement first, expect B
+
+**Nerob sekvenčne „postav A, ak padne skús B" — pomalé.** Prvý krok spike-u je
+**meranie** ktoré rozhodne za pár minút, nie dni:
+
+#### Step 0 — Paragraph alignment measurement (kritický)
+
+Pre každý zo 4 fixtures (alice, pride, frankenstein, divina):
+
+1. **Z epub_view strany:** otvor knihu, počkaj na `loadingState == success`,
+   pre každú kapitolu zaznamenaj počet odsekov ktoré `EpubController` videl
+   (`currentValue.paragraphNumber` pri scroll cez kapitolu, alebo z internal
+   chapter structure ak je dostupná).
+2. **Z našej strany:** pre každú kapitolu, parsuj raw HTML z `book.Content.Html`
+   a počítaj block-level elementy zhodne s tým ako by ich segmentoval flutter_html
+   (`<p>`, `<div>`, `<h*>`, `<blockquote>`, `<li>`, `<img>`, atď.).
+3. **Porovnaj** počty a hranice.
+
+**Výsledok:**
+- **Zhoda (málo pravdepodobné, ale ak áno):** Plán A je viable. Vybudujeme
+  paragraph mapping cez raw HTML (nie cez CanonicalChapterText) a postavíme
+  ScrollModeResolver na ňom.
+- **Nezhoda (očakávané):** Plán A skončil. **Ideme rovno Plán B.** Nezačíname
+  budovať Plán A „pre istotu" — measurement vystačí ako evidencia v ADR 0005.
+
+Toto meranie samé je **pol dňa práce maximum**. Bez stavby reálneho resolveru.
+
+#### Step 1 — Plán B (očakávaná cesta)
+
+Plán B vyhráva nielen ako útecha — **obchádza celý problém zarovnania indexov**.
+Text search nájde quote a potom zistíme ktorý epub_view odsek ten text obsahuje.
+**Nepotrebuje aby sa paragraph modely kryli.** To je presne dôvod prečo je
+robustný.
 
 **Compute anchor pri scroll:**
-1. Z aktuálnej top-of-viewport pozície vezmi prvých ~80 znakov ako quote
-2. Vytvor `HighlightAnchor` cez `AnchorCodec.createHighlight`
-3. Z neho extrahuj `chapterId + charOffset` ako `ReadingPositionAnchor`
-   (`chapterLength` z canonical text)
+1. Z `currentValue.chapter` získaj `chapterId` (manifest href / `#<index>`)
+2. Z `currentValue.paragraphNumber` získaj **text aktuálneho top paragraph-u**
+   (z epub_view internal chapter structure — `epub_view` ich má naparsované)
+3. Vezmi prvých ~80 znakov tohto textu po normalizácii → `quote`
+4. Vyhľadaj `quote` v `CanonicalChapterText.extract(book, chapterId)` →
+   `charOffset` v canonical
+5. Ulož `ReadingPositionAnchor(chapterId, charOffset, chapterLength)` +
+   transient `quote` pole (in-memory, pre rýchly resolve bez prepočtu)
 
 **Resolve:**
-1. Vytvor synthetic `HighlightAnchor` z `ReadingPositionAnchor` + dorátaný quote
-2. `AnchorCodec.findHighlight(anchor, book)` → `AnchorRange`
-3. Mapuj `range.start` → paragraph cez ten istý algoritmus ako A (alebo cez text search v paragraphoch)
-4. `controller.scrollTo(index: paragraphIndex)`
+1. Z uloženého anchoru: vezmi `chapterId + charOffset` → CanonicalChapterText
+2. Z canonical extrahuj ~80-znakový quote okolo `charOffset` (alebo použi
+   pamätaný transient quote ak je k dispozícii)
+3. Iteruj epub_view paragraphs v danej kapitole, nájdi prvý ktorého
+   normalizovaný text **obsahuje quote** (alebo má najlepší fuzzy match)
+4. `controller.scrollTo(index: absoluteParagraphIndex)`
 
-**Pre/proti:**
-- ✅ Reuse-uje overený `AnchorCodec` z M2.5
-- ⚠️ Potrebuje quote v `ReadingPositionAnchor` → buď uložiť navyše, alebo dorátať z chapter text pri resolve
-- ⚠️ Pomalšie (text search)
-- ✅ Robustnejšie pri zmene fontu / page split — quote sa nájde
-- ✅ Funguje aj keď epub_view paragraph index sa správa nečakane
+#### Step 2 — Validate Plán B na COLD restart
 
-### GATE test (T1)
+**Spike e2e (per fixture):**
+1. Spike screen pre alice.epub
+2. Scrollni na 5 pozícií, pre každú zachyť anchor
+3. **Zavri appku úplne (`flutter run` Ctrl+C, alebo OS kill cez task manager)**
+4. **Znovu spusti** appku (cold start, nie hot reload)
+5. Otvor anchor probe, klikni „Resume to position N"
+6. Over že scroll skončil na očakávanej pozícii (±1 paragraph)
 
-Pre rozhodnutie:
+Cold restart je kritické lebo:
+- `scrollTo(index)` hneď po `loadingState == success` môže pristáť zle —
+  scroll view ešte nezmeral extent
+- Riešenie typicky cez `WidgetsBinding.addPostFrameCallback` alebo malý retry
+- Toto je presne ten typ veci čo v spike-u chceš vidieť kým je throwaway
 
-1. Implementuj Plán A v `lib/spike/reader_position/` (throwaway).
-2. Spike screen: otvor `alice.epub`, manuálne scrollni na 3-5 pozícií, ulož snapshot
-   `(chapterIndex, paragraphIndex, charOffset)`, zatvor, otvor znova, klikni „Resume",
-   over že scroll skončil na očakávanom paragraph (±1).
-3. Ak Plán A funguje na všetkých 4 fixtures (alice, pride, frankenstein, divina) →
-   Plán A vyhráva.
-4. Ak A zlyhá (off-by-line, nezhoda paragraph countu, …) → implementuj Plán B,
-   znova testuj.
-5. Výsledok v ADR 0005.
+### GATE deliverables (T1)
 
-**Spike sa po T1 zmaže** (rovnako ako S0 spike v M2.5 — patternu sme verní).
+- Measurement výsledky (tabuľka paragraph counts per fixture)
+- Implementácia Plán B (alebo A ak meranie ukázalo zhodu — extrémne nepravdepodobné)
+- ADR 0005 dokumentujúce voľbu + cold restart timing finding
+- Spike `lib/spike/reader_position/` sa po dokončení zmaže (M2.5 pattern)
 
 ---
 
@@ -241,7 +295,7 @@ class ReadingPositions extends Table {
 ```dart
 class ReadingPositions extends Table {
   TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade)();
-  TextColumn get anchorJson => text()();          // ReadingPositionAnchor.toJson() ako string
+  TextColumn get anchorJson => text()();          // ReadingPositionAnchor.toJson() — NOT NULL
   IntColumn get schemeVersion => integer().withDefault(const Constant(1))();  // BookIdentity scheme; pre future migration
   DateTimeColumn get updatedAt => dateTime()();
   @override Set<Column> get primaryKey => {bookId};
@@ -249,9 +303,14 @@ class ReadingPositions extends Table {
 ```
 
 **Migration:** Drift `MigrationStrategy` — `schemaVersion: 1 → 2`, drop old columns
-chapterIndex/progressInChapter, add `anchorJson` (nullable initially? alebo not-null
-s pre-fill?). Keďže žiadne reading positions ešte neexistujú v praxi (M2 stub Reader
-neuložil žiadne), môžeme spraviť hard drop + recreate. Toto sa zafixuje v Task 2.
+chapterIndex/progressInChapter, add `anchorJson` (**NOT NULL**). Keďže žiadne
+reading positions ešte neexistujú v praxi (M2 stub Reader neuložil žiadne),
+robíme **hard drop + recreate**.
+
+**Konvencia: žiadne null-anchor riadky.** Riadok v tabuľke vznikne **až pri
+prvom save**. `getByBookId(...) == null` znamená „kniha ešte nebola otvorená /
+nemá uloženú pozíciu" → reader začne **od vrchu**. Tým pádom `anchorJson` môže
+byť `NOT NULL` bez kompromisu.
 
 ### `Books.contentHash` (M2.6 integrácia)
 
@@ -285,7 +344,11 @@ Backfill pre existujúce knihy on-demand, nie batch.
 ```
 
 - **Top bar:** back arrow (← back to library), book title (truncated), dark mode toggle (🌙 ↔ ☀️), overflow menu (zatiaľ disabled / „Coming in M3.5")
-- **Bottom bar:** progress bar + % (z `EpubChapterViewValue.progress` × spine position vs total spine items)
+- **Bottom bar:** progress bar + % (z `EpubChapterViewValue.progress` × spine position vs total spine items).
+  Pozn.: **toto % je render-based** (aktuálna scroll pozícia v aktuálnej kapitole
+  váhovaná pozíciou v spine) — je **približné** a render-závislé. Slúži len ako
+  kozmetika v bottom bare. **NEzamieňať s `ReadingPositionAnchor.progress`** ktorý
+  je char-based a deterministický pre sync účely. Dve rôzne čísla, dva rôzne účely.
 - **Tap kdekoľvek v reader body:** toggle chrome (default skrytý pri vstupe)
 - **Wake-lock počas readeru aktívny** (na mobile; PC ignoruje)
 
@@ -342,12 +405,23 @@ backfill, nie batch migration. To je jednoduchšie a nemá failure mode batchu.
 - [ ] Manuálny e2e na Windows:
   1. Otvor `alice.epub` z knižnice
   2. Scrollni na ~50% knihy
-  3. Zatvor reader (back arrow alebo OS close)
-  4. Znovu otvor tú istú knihu
+  3. Zatvor reader (back arrow)
+  4. Znovu otvor tú istú knihu (within-session reopen)
   5. ✅ Resume na ±1 paragraph od uloženej pozície
   6. Toggle dark mode → text + background sa zmení
   7. Reštart appky → dark mode preferencia perzistuje
   8. Tap chrome → toggle visible
+- [ ] **Manuálny e2e — COLD restart** (kritický, layout timing test):
+  1. Otvor knihu, scrollni na ~50%
+  2. **Úplne zabi appku** (Task Manager kill na Windows, alebo `flutter run` Ctrl+C)
+  3. **Studeno spusti appku znova** (nie hot reload)
+  4. Otvor tú istú knihu
+  5. ✅ Resume na ±1 paragraph (môže potrebovať postFrameCallback / retry — spike to vyrieši)
+- [ ] **Lifecycle flush test (Android emulator alebo manual)**:
+  1. Otvor knihu, scrollni
+  2. V rámci debounce okna (1.5 s) → swipe appku z recents alebo OS kill
+  3. Spusti znova, otvor knihu
+  4. ✅ Pozícia uložená (paused hook flushol pred kill-om)
 - [ ] Spike `lib/spike/reader_position/` zmazaný po T1
 - [ ] Branch `m3-reader-v1` mergnuteľný do master (fast-forward)
 
