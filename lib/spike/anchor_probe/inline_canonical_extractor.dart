@@ -33,8 +33,20 @@ class InlineCanonicalExtractor {
   }
 
   static String _normalize(String text) {
-    final dehyphenated = text.replaceAll('­', '');
-    final collapsed = dehyphenated.replaceAll(RegExp(r'[\s ]+'), ' ');
+    var t = text.replaceAll('­', ''); // soft hyphen
+    t = t
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('„', '"')
+        .replaceAll('«', '"')
+        .replaceAll('»', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'")
+        .replaceAll('‚', "'")
+        .replaceAll('–', '-')
+        .replaceAll('—', '-')
+        .replaceAll('…', '...');
+    final collapsed = t.replaceAll(RegExp(r'[\s ]+'), ' ');
     return collapsed.trim();
   }
 }

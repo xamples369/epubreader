@@ -83,8 +83,21 @@ class _AnchorProbeScreenState extends State<AnchorProbeScreen> {
   }
 
   static String _normalize(String text) {
-    final stripped = text.replaceAll('­', '');
-    final collapsed = stripped.replaceAll(RegExp(r'[\s ]+'), ' ');
+    var t = text.replaceAll('­', ''); // soft hyphen U+00AD
+    // Typographic punctuation reconciliation:
+    t = t
+        .replaceAll('“', '"') // left double quote "
+        .replaceAll('”', '"') // right double quote "
+        .replaceAll('„', '"') // double low-9 quote „
+        .replaceAll('«', '"') // « guillemet
+        .replaceAll('»', '"') // » guillemet
+        .replaceAll('‘', "'") // left single quote '
+        .replaceAll('’', "'") // right single quote / apostrophe '
+        .replaceAll('‚', "'") // low single quote ‚
+        .replaceAll('–', '-') // en dash –
+        .replaceAll('—', '-') // em dash —
+        .replaceAll('…', '...'); // ellipsis …
+    final collapsed = t.replaceAll(RegExp(r'[\s ]+'), ' ');
     return collapsed.trim();
   }
 
