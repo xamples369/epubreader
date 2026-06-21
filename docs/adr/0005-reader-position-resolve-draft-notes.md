@@ -135,28 +135,60 @@ proti `index: 50` (absolute) — apples-to-oranges**, ako varoval review.
 
 ---
 
-## STOP — review point pred Task 2
+## DECISION (2026-06-21, po user review): **Vetva 1.5 akceptovaná**
 
-Pôvodný Task 2 v pláne má Probe 1 kandidátov A/B/C/D ktorých žiadny netestuje
-priamy paragraph-list access. To je presne to čo používateľ označil — chybný
-Probe 1 by dal falošný GATE verdict.
+### Reframe ktorý túto voľbu robí korektnou (nie kompromisom):
 
-**Otázka pre používateľa:**
+Aj Vetva 1.5 aj Vetva 2 závisia od interného správania epub_view parsera.
+Rozdiel je len v tom **ako sa tá závislosť prejaví pri zmene**:
 
-1. **Akceptujeme Vetvu 1.5** (`package:epub_view/src/data/epub_parser.dart`
-   import)? Ak áno, Probe 1 by overoval že volanie `parseParagraphs`
-   z našej strany dá identický výsledok ako interný EpubView state (nepriamo —
-   cez paragraph count alebo first-paragraph text porovnanie s
-   `currentValue.paragraphNumber`).
-2. Alebo trváme na strict public API only a Vetvu 1.5 nepripúšťame? Vtedy
-   skok rovno na Vetvu 2 (reimpl) alebo Vetva 3 (renderer wall).
+- **Vetva 2 (reimplementácia):** závislosť ktorá sa láme **ticho** — náš vlastný
+  segmenter driftne od ich verzie, kód sa stále kompiluje, beží, len produkuje
+  subtílne zlé kotvy.
+- **Vetva 1.5 (priame volanie tej istej public funkcie):** závislosť ktorá sa láme
+  **nahlas** — zmena signatúry = compile error, zmena správania = alignment probe
+  zlyhá pri re-verify.
 
-**Tiež treba opraviť:**
+Hlasné zlyhanie je striktne bezpečnejšie než tiché, obzvlášť pri kotvách ktoré
+majú byť render-agnostické a prenosné. Identický pattern ako html package v M2.6.
 
-- Probe 2 (alignment) — pôvodný plán používal `book.Chapters[cv.chapterNumber-1]`
-  čo je tá M2.6 bug schéma. Treba ísť cez spine/manifest (per M2.6 pattern) a
-  korelovať chapter indexy správne. Plus počet odsekov nemerať cez „scrollni
-  na koniec, čítaj posledný" — namiesto toho zavolať `parseParagraphs` ourselves
-  a porovnať `chapterIndexes[i+1] - chapterIndexes[i]` proti čomukoľvek epub_view
-  reportuje (alebo proti našej reimpl ak ideme Vetvou 2).
-- scrollTo timing test — porovnávať v rovnakom index space (absolute = absolute).
+### 4 podmienky platnosti Vetvy 1.5 (všetky NUTNÉ)
+
+1. **Single adapter file** — `lib/spike/reader_position/epub_view_paragraph_bridge.dart`
+   (a po cleanup-e production location). Jeden blast radius. Thick comment
+   s rationale + pin-and-reverify pravidlom.
+2. **Pin epub_view strictly** v `pubspec.yaml` (nie caret cez minor) + ADR pravidlo:
+   akýkoľvek epub_view bump = re-run alignment probe pred merge.
+3. **Probe MUSÍ dokázať ekvivalenciu, nie ju predpokladať.** Najmä na divina
+   (štruktúrované so SubChapters — presne tam kde by extra post-processing v
+   `_EpubViewState` mohol prejaviť). Falošný positive na alice + fail na divina =
+   rozbité kotvy pre štruktúrované knihy.
+4. **Permanent regression test** v T2+ (production) — chytá prípad keď budúca
+   verzia epub_view zmení interný post-processing tak že `_paragraphs ≠
+   parseParagraphs(...)` aj keď náš kód stále kompiluje.
+
+### Bonus follow-up (cleanup path)
+
+Filovať upstream issue/PR na epub_view na vystavenie `flatParagraphs` ako
+public API. Ak autor mergne → dropneme src/ import → čistá Vetva 1. ~20 min
+práce, dáva clean exit path namiesto trvalého couplingu na internals.
+Uložené ako memory note `project_epub_view_upstream_issue.md`.
+
+### Revidovaný Probe 1 dizajn
+
+Pôvodné A/B/C/D kandidáti **DROP**. Nový probe:
+
+1. **Bridge:** `EpubViewParagraphBridge.extractFlatParagraphs(book)` cez
+   `parseChapters` + `parseParagraphs` zo src/ importu → vráti
+   `ParseParagraphsResult { flatParagraphs, chapterIndexes }`.
+2. **EpubView side:** počkaj `loadingState == success`, vezmi
+   `controller.tableOfContents()` — to vystavuje **absolútne** chapter startIndex-y.
+3. **Ekvivalencia probe (deterministická, žiadny manual scroll):**
+   - Porovnaj `bridge.chapterIndexes.length` vs `viewToc.length`
+   - Per kapitola: `bridge.chapterIndexes[i]` musí presne sedieť s
+     `viewToc[i].startIndex`. Ak hocijaký chapter má rozdiel → Vetva 1.5
+     equivalence NEdokázaná → escalate (Vetva 3 v starom modeli).
+4. Spusti na všetkých 4 fixtures, najmä **divina**.
+
+Toto je striktne lepšie než pôvodný manual-scroll Probe 2 — deterministické,
+rýchle, jednoznačné, pokrýva subchapters cez `parseChapters` fold logiku.

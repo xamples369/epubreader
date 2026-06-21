@@ -35,10 +35,25 @@ class LibraryScreen extends ConsumerWidget {
     final booksAsync = ref.watch(libraryBooksProvider);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: Text(l.addBook),
-        onPressed: () => _pickAndAdd(context, ref),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'devReaderPositionProbe',
+            tooltip: 'DEV: reader position probe (M3 GATE)',
+            child: const Icon(Icons.science),
+            onPressed: () => Navigator.of(context)
+                .pushNamed('/dev/reader_position_probe'),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.extended(
+            heroTag: 'addBook',
+            icon: const Icon(Icons.add),
+            label: Text(l.addBook),
+            onPressed: () => _pickAndAdd(context, ref),
+          ),
+        ],
       ),
       appBar: AppBar(
         title: Text(l.libraryTitle),
