@@ -97,4 +97,50 @@ void main() {
     expect(input, isNot(contains('AUTHORS:')));
     expect(input, isNot(contains('LANG:')));
   });
+
+  test(
+      'no spine item suffers lookup-failed on any fixture '
+      '(empty-content from cover wrappers is allowed)',
+      () async {
+    for (final name in [
+      'alice.epub',
+      'pride.epub',
+      'frankenstein.epub',
+      'divina.epub',
+    ]) {
+      final book = await loadFixture(name);
+      final status = BookIdentity.debugResolveStatus(book);
+
+      final failed = status.entries
+          .where((e) => e.value == 'lookup-failed')
+          .map((e) => e.key)
+          .toList();
+
+      expect(failed, isEmpty,
+          reason:
+              '$name has ${failed.length} spine items with lookup-failed '
+              '(ambiguous href mapping or missing manifest content). '
+              'Examples: ${failed.take(3).join(", ")}');
+    }
+  });
+
+  test(
+      'majority of spine items resolve to ok status — empty cover wrappers OK',
+      () async {
+    for (final name in [
+      'alice.epub',
+      'pride.epub',
+      'frankenstein.epub',
+      'divina.epub',
+    ]) {
+      final book = await loadFixture(name);
+      final status = BookIdentity.debugResolveStatus(book);
+      final okCount = status.values.where((v) => v == 'ok').length;
+      final emptyCount =
+          status.values.where((v) => v == 'empty-content').length;
+      expect(okCount, greaterThan(emptyCount * 2),
+          reason: '$name: $okCount ok vs $emptyCount empty — too many '
+              'empty items suggests aggressive HTML stripping or bad fixture');
+    }
+  });
 }

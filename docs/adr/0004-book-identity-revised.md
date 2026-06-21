@@ -148,6 +148,15 @@ toto trvalo overuje v test suite. Ak by P2 regression vznikol (návrat k
   s ADR 0002 §4.3.
 - **`package:html` ako dependency** je nutná pre P1 fix. Je to Dart team
   package, stabilná maintenance, žiadne realistické riziko že zmizne.
+- **`package:html` upgrade je súčasť scheme contract**: `_identityNormalize`
+  závisí od deterministického parser output-u. Aktuálny pin v `pubspec.yaml`
+  je `html: ^0.15.6` — pre 0.x packages caret = `>=0.15.6 <0.16.0`, čo blokuje
+  minor (≈ major) bumps automaticky. **Akýkoľvek upgrade `html` cez minor
+  hranicu (napr. na 0.16.0 alebo 1.0.0) MUSÍ prejsť explicitným review:**
+  spustí sa test suite, porovnajú sa hash-y všetkých 4 fixtures pred/po, a ak
+  sa zmenia → bump `schemeVersion` + plánovaná migrácia. Bez tohto je
+  „frozen" sľub porušený. Toto pravidlo platí aj pre `crypto` package (SHA-256
+  je štandard, ale paranoidnosť je lacná).
 
 ## Alternatívy zamietnuté (ostávajú z ADR 0003 + nové)
 

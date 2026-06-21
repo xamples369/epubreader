@@ -51,6 +51,30 @@ class BookIdentity {
   /// hash-uje. Užitočné na overenie pokrytia (length sanity check).
   static String debugCanonicalInput(EpubBook book) => _canonicalInput(book);
 
+  /// Diagnostic — pre každý spine item href vráti status mapovania:
+  ///   - `'ok'` — lookup uspel, content má aj nejaký text po normalize
+  ///   - `'empty-content'` — lookup uspel, ale source content je prázdny
+  ///     (typicky cover wrapper s len obrázkom) — toto je legitímne
+  ///   - `'lookup-failed'` — žiadny match v `book.Content.Html` alebo
+  ///     ambiguous suffix match (vrátili sme null radšej než guess)
+  ///
+  /// Test môže asserovať že žiadny item nemá `lookup-failed`, ale
+  /// `empty-content` toleruje (cover stránky, oddeľovače).
+  static Map<String, String> debugResolveStatus(EpubBook book) {
+    final result = <String, String>{};
+    for (final href in _spineHrefs(book)) {
+      final raw = _resolveHrefToHtml(book, href);
+      if (raw == null) {
+        result[href] = 'lookup-failed';
+      } else if (_identityNormalize(raw).isEmpty) {
+        result[href] = 'empty-content';
+      } else {
+        result[href] = 'ok';
+      }
+    }
+    return result;
+  }
+
   static String _canonicalInput(EpubBook book) {
     final parts = <String>['SCHEME:$schemeVersion'];
 
@@ -96,32 +120,40 @@ class BookIdentity {
   ///
   /// Manifest hrefs sú relatívne k OPF adresáru (`Text/ch1.xhtml`), kým
   /// `book.Content.Html` môže byť kľúčované plnou cestou od ZIP rootu
-  /// (`OEBPS/Text/ch1.xhtml`). Skúšame viac variantov mapovania.
+  /// (`OEBPS/Text/ch1.xhtml`).
+  ///
+  /// **Ranking by match strength** — pre frozen-forever schému je dôležité
+  /// nehádať. Skúšame iba dve sily zhody a pri akejkoľvek ambiguite vrátime
+  /// null (= „čestne prázdne") namiesto guess-u.
+  ///
+  /// Žiadny basename-only match — duplicitné basenames naprieč priečinkami
+  /// sú v reálnych EPUB-och bežné (`part1/chapter.xhtml`,
+  /// `part2/chapter.xhtml`) a basename match by ticho mapoval na zlý obsah.
   static String? _resolveHrefToHtml(EpubBook book, String href) {
     final htmlMap = book.Content?.Html;
     if (htmlMap == null) return null;
 
-    // Try direct match
+    // Strength 1 — exact match (najsilnejšie)
     final direct = htmlMap[href];
     if (direct != null) return direct.Content;
 
-    // Try suffix / prefix matches (handle OPF-relative vs root-relative)
-    final hrefBasename = _basename(href);
+    // Strength 2 — suffix match (jeden alebo druhý smer). Musí byť unikátny.
+    String? suffixHit;
+    var suffixCount = 0;
     for (final entry in htmlMap.entries) {
       final key = entry.key;
-      if (key == href ||
-          key.endsWith('/$href') ||
-          href.endsWith('/$key') ||
-          _basename(key) == hrefBasename) {
-        return entry.value.Content;
+      if (key.endsWith('/$href') || href.endsWith('/$key')) {
+        suffixHit = entry.value.Content;
+        suffixCount++;
+        if (suffixCount > 1) return null; // ambiguous → honestly empty
       }
     }
-    return null;
-  }
+    if (suffixCount == 1) return suffixHit;
 
-  static String _basename(String path) {
-    final idx = path.lastIndexOf('/');
-    return idx >= 0 ? path.substring(idx + 1) : path;
+    // Žiadna iná stratégia — basename match je príliš slabý
+    // (`part1/chapter.xhtml` vs `part2/chapter.xhtml` by oba mapovali na
+    // basename `chapter.xhtml`, čo je ticho zlé). Vrátime null.
+    return null;
   }
 
   /// FROZEN identity normalization. **Nikdy nemeň bez bumpu schemeVersion.**
