@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'features/library/library_screen.dart';
 import 'features/reader/reader_stub_screen.dart';
 import 'l10n/app_localizations.dart';
+import 'spike/anchor_probe/anchor_probe_screen.dart';
 
 class EpubReaderApp extends StatelessWidget {
   const EpubReaderApp({super.key});
@@ -19,6 +20,11 @@ class EpubReaderApp extends StatelessWidget {
       ),
       home: const LibraryScreen(),
       onGenerateRoute: (settings) {
+        if (settings.name == '/dev/anchor_probe') {
+          return MaterialPageRoute(
+            builder: (_) => const AnchorProbeScreen(),
+          );
+        }
         if (settings.name == '/reader') {
           final bookId = settings.arguments as String;
           return MaterialPageRoute(
