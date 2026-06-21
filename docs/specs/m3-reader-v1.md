@@ -204,27 +204,68 @@ flutter_html (zložité, krehké).
 **Nerob sekvenčne „postav A, ak padne skús B" — pomalé.** Prvý krok spike-u je
 **meranie** ktoré rozhodne za pár minút, nie dni:
 
-#### Step 0 — Paragraph alignment measurement (kritický)
+#### Step 0 — Dva probe-y na rozhodnutie GATE (kritické)
 
-Pre každý zo 4 fixtures (alice, pride, frankenstein, divina):
+Plán B tvrdí že „obchádza zarovnanie indexov" — ale **iba ak vieme prečítať text
+odseku epub_view podľa jeho indexu cez public API**. Bez tej čitateľnosti by
+sa Plán B ticho zrútil späť do požiadavky Plánu A (vlastná segmentácia musí
+byť zarovnaná s epub_view). Step 0 preto meria **dve** veci, nie jednu.
 
-1. **Z epub_view strany:** otvor knihu, počkaj na `loadingState == success`,
-   pre každú kapitolu zaznamenaj počet odsekov ktoré `EpubController` videl
-   (`currentValue.paragraphNumber` pri scroll cez kapitolu, alebo z internal
-   chapter structure ak je dostupná).
-2. **Z našej strany:** pre každú kapitolu, parsuj raw HTML z `book.Content.Html`
-   a počítaj block-level elementy zhodne s tým ako by ich segmentoval flutter_html
-   (`<p>`, `<div>`, `<h*>`, `<blockquote>`, `<li>`, `<img>`, atď.).
-3. **Porovnaj** počty a hranice.
+##### Probe 1 — Čitateľnosť textu odseku epub_view cez API (PRIMÁRNY make-or-break)
 
-**Výsledok:**
-- **Zhoda (málo pravdepodobné, ale ak áno):** Plán A je viable. Vybudujeme
-  paragraph mapping cez raw HTML (nie cez CanonicalChapterText) a postavíme
-  ScrollModeResolver na ňom.
-- **Nezhoda (očakávané):** Plán A skončil. **Ideme rovno Plán B.** Nezačíname
-  budovať Plán A „pre istotu" — measurement vystačí ako evidencia v ADR 0005.
+Spike screen pre alice.epub:
+1. Otvor knihu cez `EpubController`, počkaj na `loadingState == success`
+2. Pokús sa cez **public API** dostať k textu odseku N v aktuálnej kapitole:
+   - Skús `EpubController.currentValue?.chapter` → `EpubChapter.HtmlContent` (raw HTML)
+   - Skús či `epub_view` má vystavené `Paragraph` objekty cez nejaký getter
+   - Skús `controller.tableOfContents()` či vystavuje paragraph-level info
+   - Skús reverse-engineering cez internal state (ak je `_epubViewState` viditeľné — pravdepodobne nie)
+3. **Verdict:** dostali sme sa k stringu textu konkrétneho odseku cez public API?
 
-Toto meranie samé je **pol dňa práce maximum**. Bez stavby reálneho resolveru.
+##### Probe 2 — Paragraph alignment (sekundárny, len ak Probe 1 padol)
+
+Pre každú kapitolu (alice na začiatok stačí, divina pre stress):
+1. **Z epub_view strany:** scrollni cez celú kapitolu, zaznamenaj posledné
+   `currentValue.paragraphNumber` (= počet odsekov v kapitole podľa epub_view).
+2. **Z našej strany:** parsuj raw HTML z `book.Content.Html`, počítaj block-level
+   elementy zhodne s tým ako by ich segmentoval flutter_html
+   (`<p>`, `<div>`, `<h*>`, `<blockquote>`, `<li>`, `<img>`).
+3. **Porovnaj** počty (a stratifikuj — koľko fixtures sa kryje, kde sú off).
+
+##### Rozhodovací strom
+
+**Vetva 1 — Probe 1 ✅ (text odseku čitateľný cez API):**
+- **Plán B funguje alignment-free.** Hľadáme quote v skutočných epub_view
+  odsekoch, index je priamo použiteľný v `scrollTo`. Najlepší prípad.
+- Probe 2 sa nemusí robiť (alignment je irelevantný).
+- ADR 0005 dokumentuje: Plán B-pure, API metóda použitá na získanie textu.
+
+**Vetva 2 — Probe 1 ❌, Probe 2 ✅ (alignment sa kryje):**
+- Plán B cez **vlastné parsovanie + alignment-dependent mapping**. Funguje,
+  ale je krehkejšie — závisí od trvalej zhody našej HTML segmentácie s
+  flutter_html. Akýkoľvek upgrade `flutter_html` môže túto zhodu rozbiť.
+- ADR 0005 explicitne dokumentuje túto krehkosť ako known risk a pripne
+  `flutter_html` verziu prísnejšie (per M2.6 html package precedent).
+- Pridáme test ktorý alignment kontroluje na fixtures (regression guard).
+
+**Vetva 3 — Probe 1 ❌, Probe 2 ❌ (ani text, ani alignment):**
+- **Ani jeden plán nefunguje.** Toto je renderer wall na ktorú strategy doc
+  upozorňovala. R1 „M3 STOP a re-spec" je reálne na stole.
+- Otvára sa otázka **návratu k WebView rendereru** (`flutter_epub_viewer` s
+  opraveným Windows crashom z M1), alebo iného rendereru.
+- **Toto je strategické rozhodnutie ktoré sa NEROBÍ ticho v M3 spike-u.**
+  Ak sa Vetva 3 stane, M3 sa zastaví, výsledok Step 0 sa pošle na review
+  spolu s návrhom ďalšieho postupu, a rozhodnutie sa robí spoločne (nie
+  pretlačením náhradného plánu).
+
+##### Bonus, ak ostane čas
+
+Aj v Vetve 1 a 2 stojí za to skontrolovať či `scrollTo(index)` reálne pristane
+na očakávaný odsek cez 3-5 manuálnych pozícií na alice.epub. To overí timing
+(postFrameCallback potreba) ešte pred T2+. Lacné a šetrí debug v ostatných taskoch.
+
+Toto Step 0 celé je **pol dňa práce maximum**. Bez stavby reálneho resolveru,
+bez DB integrácie.
 
 #### Step 1 — Plán B (očakávaná cesta)
 
@@ -269,9 +310,12 @@ Cold restart je kritické lebo:
 
 ### GATE deliverables (T1)
 
-- Measurement výsledky (tabuľka paragraph counts per fixture)
-- Implementácia Plán B (alebo A ak meranie ukázalo zhodu — extrémne nepravdepodobné)
-- ADR 0005 dokumentujúce voľbu + cold restart timing finding
+- **Probe 1 výsledok**: čitateľnosť textu odseku epub_view cez API (Yes/No + dôkaz)
+- **Probe 2 výsledok** (ak Probe 1 padol): paragraph alignment tabuľka per fixture
+- Vetva (1/2/3) a podľa nej:
+  - **Vetva 1 alebo 2:** Implementácia Plán B v zvolenom režime
+  - **Vetva 3:** STOP, návrh na strategický review (žiadna ďalšia implementácia)
+- ADR 0005 dokumentujúce probe výsledky + voľbu + (ak Vetva 1/2) cold restart timing finding
 - Spike `lib/spike/reader_position/` sa po dokončení zmaže (M2.5 pattern)
 
 ---
