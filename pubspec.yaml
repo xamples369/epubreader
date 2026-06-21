@@ -52,6 +52,7 @@ dependencies:
   meta: ^1.17.0
   image: ^3.3.0
   epubx: ^4.0.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
